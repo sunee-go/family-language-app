@@ -33,10 +33,8 @@ if youtube_url:
         if st.button("🚀 ดึงซับไตเติลและแปลภาษาอัตโนมัติ"):
             with st.spinner("กำลังดึงข้อมูลซับไตเติลจาก YouTube..."):
                 try:
-                    # ปรับปรุงวิธีเรียกใช้งาน API ให้ถูกต้องตามเวอร์ชันปัจจุบัน
-                    transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
-                    transcript = transcript_list.find_transcript(['en', 'en-US', 'en-GB'])
-                    fetched_transcript = transcript.fetch()
+                    # ใช้คำสั่งดึงซับรูปแบบที่รองรับเวอร์ชันปัจจุบัน
+                    fetched_transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=['en', 'en-US', 'en-GB'])
                     
                     translator = GoogleTranslator(source='en', target='th')
                     processed_subtitles = []
