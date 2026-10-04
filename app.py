@@ -33,34 +33,48 @@ if youtube_url:
         if st.button("🚀 ดึงซับไตเติลและแปลภาษาอัตโนมัติ"):
             with st.spinner("กำลังดึงข้อมูลซับไตเติลจาก YouTube..."):
                 try:
-                    # ใช้คำสั่งดึงซับรูปแบบที่รองรับเวอร์ชันปัจจุบัน
-                    fetched_transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=['en', 'en-US', 'en-GB'])
+                    # ค้นหาซับไตเติลภาษาอังกฤษจากวิดีโอ (รองรับทั้งแบบสร้างเองและอัตโนมัติ)
+                    transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
                     
-                    translator = GoogleTranslator(source='en', target='th')
-                    processed_subtitles = []
+                    # พยายามหาซับภาษาอังกฤษก่อน
+                    transcript = None
+                    try:
+                        transcript = transcript_list.find_transcript(['en', 'en-US', 'en-GB'])
+                    except:
+                        # ถ้าไม่เจอ ลองหาซับภาษาอื่นๆ ที่แปลเป็นอังกฤษได้
+                        for t in transcript_list:
+                            transcript = t
+                            break
                     
-                    for item in fetched_transcript:
-                        eng_text = item.get('text', '').replace("\n", " ")
-                        if not eng_text.strip():
-                            continue
-                        try:
-                            thai_text = translator.translate(eng_text)
-                        except:
-                            thai_text = eng_text
-                            
-                        processed_subtitles.append({
-                            "word": eng_text,
-                            "translation": thai_text,
-                            "start": item.get('start', 0),
-                            "end": item.get('start', 0) + item.get('duration', 0)
-                        })
-                    
-                    st.session_state['subtitles'] = processed_subtitles
-                    st.success(f"ดึงซับไตเติลสำเร็จ! ทั้งหมด {len(processed_subtitles)} รายการ")
+                    if transcript:
+                        fetched_transcript = transcript.fetch()
+                        translator = GoogleTranslator(source='auto', target='th')
+                        processed_subtitles = []
+                        
+                        for item in fetched_transcript:
+                            eng_text = item.get('text', '').replace("\n", " ")
+                            if not eng_text.strip():
+                                continue
+                            try:
+                                thai_text = translator.translate(eng_text)
+                            except:
+                                thai_text = eng_text
+                                
+                            processed_subtitles.append({
+                                "word": eng_text,
+                                "translation": thai_text,
+                                "start": item.get('start', 0),
+                                "end": item.get('start', 0) + item.get('duration', 0)
+                            })
+                        
+                        st.session_state['subtitles'] = processed_subtitles
+                        st.success(f"ดึงซับไตเติลสำเร็จ! ทั้งหมด {len(processed_subtitles)} รายการ")
+                    else:
+                        st.error("ไม่พบซับไตเติลในวิดีโอนี้")
                     
                 except Exception as e:
-                    st.error(f"ไม่สามารถดึงซับไตเติลของคลิปนี้ได้: {e}")
-                    st.info("💡 ทริค: ลองเลือกคลิปที่มีซับไตเติลภาษาอังกฤษ (CC) เปิดอยู่บน YouTube ครับ")
+                    st.error(f"ไม่สามารถดึงซับไตเติลได้: {e}")
+                    st.info("💡 คำแนะนำ: บางคลิปอาจปิดกั้นการดึงซับอัตโนมัติ ลองทดสอบกับคลิปการสอนภาษาอังกฤษทั่วไปที่มีซับ CC ดูครับ")
 
         if 'subtitles' in st.session_state:
             st.markdown("### 📝 รายการซับไตเติลทั้งหมดในคลิป")
