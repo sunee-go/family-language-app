@@ -33,12 +33,18 @@ if youtube_url:
         if st.button("🚀 ดึงซับไตเติลและแปลภาษาอัตโนมัติ"):
             with st.spinner("กำลังดึงข้อมูลซับไตเติลจาก YouTube..."):
                 try:
-                    transcript_list = YouTubeTranscriptApi.get_transcript(video_id, languages=['en', 'en-US'])
+                    # ปรับปรุงวิธีเรียกใช้งาน API ให้ถูกต้องตามเวอร์ชันปัจจุบัน
+                    transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
+                    transcript = transcript_list.find_transcript(['en', 'en-US', 'en-GB'])
+                    fetched_transcript = transcript.fetch()
+                    
                     translator = GoogleTranslator(source='en', target='th')
                     processed_subtitles = []
                     
-                    for item in transcript_list:
-                        eng_text = item['text'].replace("\n", " ")
+                    for item in fetched_transcript:
+                        eng_text = item.get('text', '').replace("\n", " ")
+                        if not eng_text.strip():
+                            continue
                         try:
                             thai_text = translator.translate(eng_text)
                         except:
@@ -47,8 +53,8 @@ if youtube_url:
                         processed_subtitles.append({
                             "word": eng_text,
                             "translation": thai_text,
-                            "start": item['start'],
-                            "end": item['start'] + item['duration']
+                            "start": item.get('start', 0),
+                            "end": item.get('start', 0) + item.get('duration', 0)
                         })
                     
                     st.session_state['subtitles'] = processed_subtitles
